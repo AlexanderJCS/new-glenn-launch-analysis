@@ -1,7 +1,18 @@
 import pickle
-import numpy as np
 import pandas
 import matplotlib.pyplot as plt
+
+
+def filter_outliers(df, col):
+    vals = df[col].dropna()
+    mean_val = vals.mean()
+    mad = (vals - mean_val).abs().mean()  # Mean absolute deviation
+    threshold = 2 * mad
+    rolling_median = df[col].rolling(window=5, center=True).median()
+    diff = (df[col] - rolling_median).abs()  # Absolute deviation from rolling mean
+
+    return df[diff < threshold]
+
 
 def main():
     # Load data
@@ -10,36 +21,19 @@ def main():
     df = pandas.DataFrame(data)
     df.to_csv("output.csv", index=False)
 
-    # 1. Drop NaNs in altitude
-    alts = df["stage1_alt"].dropna()
+    filtered_stage1_alts = filter_outliers(df, "stage1_alt")
+    filtered_stage1_vels = filter_outliers(df, "stage1_vel")
 
-    # 2. Compute the mean absolute deviation (MAD)
-    mean_alt = alts.mean()
-    mad = (alts - mean_alt).abs().mean()
+    fig, ax1 = plt.subplots(figsize=(8, 4))
 
-    # 3. Build threshold (e.g. 3 × MAD)
-    threshold = 2 * mad
+    ax1.plot(filtered_stage1_alts["time"], filtered_stage1_alts["stage1_alt"], label="Stage 1 Altitude")
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Stage 1 Altitude (m)")
 
-    # 4. Compute rolling median for local context
-    rolling_median = df["stage1_alt"].rolling(window=5, center=True).median()
-
-    # 5. Compute absolute deviation from rolling median
-    diff = (df["stage1_alt"] - rolling_median).abs()
-
-    # 6. Filter out outliers
-    filtered = df[diff < threshold]
-
-    # 7. Extract the time and altitude of the filtered points
-    time = filtered["time"]
-    alt = filtered["stage1_alt"]
-
-    # 8. Plot raw vs filtered for comparison
-    plt.figure(figsize=(8, 5))
-    plt.plot(time, alt, linewidth=2)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Stage 1 Altitude (m)")
-    plt.title("Stage 1 Altitude vs Time (Filtered)")
-    plt.grid(True)
+    ax2 = ax1.twinx()
+    ax2.plot(filtered_stage1_vels["time"], filtered_stage1_vels["stage1_vel"], label="Stage 1 Velocity")
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Stage 1 Velocity (m/s)")
     plt.show()
 
 if __name__ == "__main__":
