@@ -1,3 +1,4 @@
+import os
 import time
 
 import cv2
@@ -8,6 +9,8 @@ from multiprocessing import Pool, cpu_count
 import pickle
 
 from tqdm import tqdm
+
+import download
 
 
 def img_to_digits(img):
@@ -111,9 +114,17 @@ def analyze_video_parallel(video_path):
     return results
 
 
-if __name__ == "__main__":
+def main():
     video_file = "new_glenn_clipped.mp4"
+    if not os.path.isfile(video_file):
+        print("Video not found; Downloading video")
+        download.download()
+
     ocr_data = analyze_video_parallel(video_file)
-    
+
     with open("rocket_data.pickle", "wb") as f:
         pickle.dump(ocr_data, f)
+
+
+if __name__ == "__main__":
+    main()
